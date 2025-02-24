@@ -27,5 +27,52 @@ Arch-Essentials is a comprehensive collection of shell scripts designed to help 
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/Arch-Essentials.git
+   git clone https://github.com/manas1511200/Arch-Essentials.git
    cd Arch-Essentials
+   ```
+
+2. **Install Dependencies:**
+
+   Ensure you have [fzf](https://github.com/junegunn/fzf), [lshw](https://en.wikipedia.org/wiki/Lshw), and other required tools installed:
+
+   ```bash
+   sudo pacman -Syu fzf lshw
+   ```
+
+3. **Make the Scripts Executable:**
+
+   ```bash
+   chmod +x arch_tools.sh
+   chmod +x ./scripts/system_info/*.sh
+   chmod +x ./scripts/debug/deep_debug.sh
+   ```
+
+---
+
+## Usage
+
+Launch the main menu with:
+
+```bash
+./arch_tools.sh
+```
+
+From the main menu, select options like **Customize**, **Update**, **Debug**, **Cleanup**, **Network**, or **System Info**.  
+- **Deep Debug:** Under the **Debug** submenu, the *Deep Debug* option will run comprehensive checks, including verifying drivers, package integrity, pacman-key, and more.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+*Happy Arch-ing and enjoy a hassle-free, customized Arch Linux experience!*
+
