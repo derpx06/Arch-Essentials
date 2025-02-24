@@ -53,7 +53,7 @@ Arch-Essentials is a comprehensive collection of shell scripts designed to help 
 Launch the main menu with:
 
 ```bash
-./arch_tools.sh
+./arch_essentials.sh
 ```
 
 From the main menu, select options like **Customize**, **Update**, **Debug**, **Cleanup**, **Network**, or **System Info**.  
