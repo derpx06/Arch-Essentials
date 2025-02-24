@@ -43,8 +43,7 @@ Arch-Essentials is a comprehensive collection of shell scripts designed to help 
 
    ```bash
    chmod +x arch_tools.sh
-   chmod +x ./scripts/system_info/*.sh
-   chmod +x ./scripts/debug/deep_debug.sh
+   chmod +x ./scripts/*.sh
    ```
 
 ---
