@@ -42,7 +42,7 @@ Arch-Essentials is a comprehensive collection of shell scripts designed to help 
 3. **Make the Scripts Executable:**
 
    ```bash
-   chmod +x arch_tools.sh
+   chmod +x arch_essentials.sh
    chmod +x ./scripts/*.sh
    ```
 
