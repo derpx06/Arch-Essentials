@@ -4,8 +4,8 @@
 
 Arch-Essentials is a comprehensive collection of shell scripts designed to help you keep your Arch Linux system running smoothly. Whether it's checking drivers, ensuring package integrity, or debugging system issues, this project provides modular, user-friendly tools to make your Arch experience effortless.
 
+![Screenshot From 2025-02-26 15-24-28](https://github.com/user-attachments/assets/e2206463-e070-4f2c-bb72-d0f5d7bde992)
 ---
-![Uploading Screenshot From 2025-02-26 15-24-28.png…]()
 
 ## Features
 
