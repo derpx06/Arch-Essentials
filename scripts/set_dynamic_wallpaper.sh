@@ -8,7 +8,6 @@
 #   - Runs the repository's install.sh script as sudo
 #
 # If run as root (via sudo), it uses the invoking user's home directory.
-
 # Define Colors
 RESET="\033[0m"
 BOLD="\033[1m"
@@ -17,21 +16,17 @@ GREEN="\033[32m"
 RED="\033[31m"
 CYAN="\033[36m"
 YELLOW="\033[33m"
-
 # Determine target user's home directory
 if [ "$EUID" -eq 0 ] && [ -n "$SUDO_USER" ]; then
     USER_HOME=$(eval echo "~$SUDO_USER")
 else
     USER_HOME=$HOME
 fi
-
 echo -e "${BLUE}${BOLD}Dynamic Wallpaper Installer${RESET}\n"
-
 # Function to check if a command exists
 command_exists() {
     command -v "$1" &> /dev/null
 }
-
 # Function to prompt for installation if a command is missing; refresh keyring first.
 # Defaults to yes if no input is provided.
 prompt_install() {
@@ -53,18 +48,15 @@ prompt_install() {
         fi
     fi
 }
-
 # Check for required packages
 echo -e "${CYAN}Checking for required packages...${RESET}"
 REQUIRED_PACKAGES=(git feh cronie xorg-xrandr)
 for pkg in "${REQUIRED_PACKAGES[@]}"; do
     prompt_install "$pkg" "$pkg"
 done
-
 # Repository settings
 REPO_URL="https://github.com/adi1090x/dynamic-wallpaper.git"
 REPO_DIR="dynamic-wallpaper"
-
 # Function to check for valid wallpaper directory inside repo
 find_wallpaper_dir() {
     if [ -d "wallpapers" ]; then
@@ -75,7 +67,6 @@ find_wallpaper_dir() {
         echo ""
     fi
 }
-
 # Check if repository is already cloned and valid
 if [ -d "$REPO_DIR" ]; then
     echo -e "${CYAN}Repository already cloned. Entering ${BOLD}$REPO_DIR${RESET}${CYAN} directory...${RESET}"
@@ -87,14 +78,13 @@ if [ -d "$REPO_DIR" ]; then
         reclone=${reclone:-Y}
         if [[ "$reclone" =~ ^[Yy]$ ]]; then
             cd ..
-            rm -rf "$REPO_DIR"
+            sudo rm -rf "$REPO_DIR" || { echo -e "${RED}Failed to remove existing repository. Exiting...${RESET}"; exit 1; }
         else
             echo -e "${RED}Cannot proceed without a valid repository structure. Exiting...${RESET}"
             exit 1
         fi
     fi
 fi
-
 # Clone repository if it doesn't exist
 if [ ! -d "$REPO_DIR" ]; then
     echo -e "${YELLOW}Warning: The dynamic-wallpaper repository is expected to be >1GB in size.${RESET}"
@@ -107,12 +97,16 @@ if [ ! -d "$REPO_DIR" ]; then
     echo -e "${CYAN}Cloning dynamic-wallpaper repository...${RESET}"
     git clone "$REPO_URL" || { echo -e "${RED}Failed to clone repository. Exiting...${RESET}"; exit 1; }
     cd "$REPO_DIR" || exit
+    # Verify critical files exist
+    if [ ! -f "install.sh" ]; then
+        echo -e "${RED}Critical error: install.sh not found in repository. Exiting...${RESET}"
+        exit 1
+    fi
 fi
-
 # Run the repository's install.sh script as sudo
 echo -e "${CYAN}Running the repository's install.sh script...${RESET}"
 sudo chmod +x install.sh
 sudo ./install.sh || { echo -e "${RED}Failed to run install.sh. Exiting...${RESET}"; exit 1; }
-echo -e "\n${GREEN}${BOLD}see you gnome settings!"
 echo -e "\n${GREEN}${BOLD}Dynamic Wallpaper installation completed successfully!${RESET}"
+echo -e "${CYAN}You can configure wallpapers via GNOME settings.${RESET}"
 exit 0
