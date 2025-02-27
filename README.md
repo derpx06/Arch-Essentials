@@ -45,6 +45,7 @@ Arch-Essentials is a comprehensive collection of shell scripts designed to help 
    ```bash
    chmod +x arch_essentials.sh
    chmod +x ./scripts/*.sh
+   sudo ./arch_essentials.sh
    ```
 
 ---
