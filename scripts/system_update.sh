@@ -2,19 +2,15 @@
 ################################################################################
 # system_update.sh
 #
-# This script updates and upgrades your Arch Linux system, refreshes the
-# pacman keyring, and checks for any errors encountered during the process.
+# This script updates and upgrades your Arch Linux system, prioritizing the
+# keyring update to prevent signature verification errors. It logs all actions
+# and checks for errors, providing a clear summary upon completion.
 #
-# What it does:
-#   1. Runs a full system update and upgrade (pacman -Syu).
-#   2. Initializes and populates the pacman keyring.
-#   3. Updates the archlinux-keyring package.
-#   4. Logs all output and checks for errors.
-#   5. Provides a concise overview of the operations performed.
-#   6. Waits for the user to press Enter before returning.
-#
-# Usage:
-#   bash system_update.sh
+# Changes made to fix issues:
+# 1. Correct order: Update archlinux-keyring first to avoid signature errors.
+# 2. Removed unnecessary pacman-key --init which can reset the keyring.
+# 3. Keyring population after package update ensures latest keys are active.
+# 4. Streamlined logging and error checking for clarity.
 ################################################################################
 
 # Define colors for output
@@ -37,55 +33,50 @@ log() {
 check_error() {
     if [ $? -ne 0 ]; then
         log "${RED}[ERROR] $1 failed.${RESET}"
+        exit 1
     else
         log "${GREEN}[SUCCESS] $1 completed.${RESET}"
     fi
 }
 
 # Begin system update process
-log "${CYAN}${BOLD}Starting System Update and Upgrade...${RESET}"
+log "${CYAN}${BOLD}Starting Arch Linux System Update...${RESET}"
 log "------------------------------------------------------------"
 
-# 1. System Update & Upgrade
-log "${CYAN}Running system update & upgrade (sudo pacman -Syu)...${RESET}"
-sudo pacman -Syu --noconfirm 2>&1 | tee -a "$LOG_FILE"
-check_error "System Update & Upgrade"
-
-# 2. Refresh and Improve the Keyring
-log "\n${CYAN}Refreshing pacman keyring...${RESET}"
-# Initialize the keyring (if not already done)
-sudo pacman-key --init 2>&1 | tee -a "$LOG_FILE"
-check_error "Keyring Initialization"
-
-# Populate keyring with the Arch Linux keys
-sudo pacman-key --populate archlinux 2>&1 | tee -a "$LOG_FILE"
-check_error "Keyring Population"
-
-# Update the archlinux-keyring package
+# 1. Update archlinux-keyring first to prevent key errors during upgrade
 log "\n${CYAN}Updating archlinux-keyring package...${RESET}"
 sudo pacman -Sy archlinux-keyring --noconfirm 2>&1 | tee -a "$LOG_FILE"
 check_error "archlinux-keyring Update"
 
-# 3. Check for Errors in the Log
+# 2. Populate the latest keys from the updated keyring package
+log "\n${CYAN}Populating Arch Linux keys...${RESET}"
+sudo pacman-key --populate archlinux 2>&1 | tee -a "$LOG_FILE"
+check_error "Keyring Population"
+
+# 3. Perform full system upgrade with the refreshed keyring
+log "\n${CYAN}Running full system upgrade (sudo pacman -Syu)...${RESET}"
+sudo pacman -Syu --noconfirm 2>&1 | tee -a "$LOG_FILE"
+check_error "System Upgrade"
+
+# 4. Check log for any errors encountered
 log "\n${CYAN}Checking log for errors...${RESET}"
-if grep -i "error" "$LOG_FILE" >/dev/null; then
-    log "${RED}Errors were detected during the update process. Please review the log at ${LOG_FILE}.${RESET}"
+if grep -qi "error" "$LOG_FILE"; then
+    log "${RED}Errors detected. Review log at ${LOG_FILE}.${RESET}"
 else
-    log "${GREEN}No errors detected during the update process.${RESET}"
+    log "${GREEN}All operations completed without errors.${RESET}"
 fi
 
-# 4. Overview of Actions Performed
+# 5. Final summary
 log "\n------------------------------------------------------------"
-log "${BOLD}Overview of System Update:${RESET}"
-log " - System update & upgrade executed."
-log " - Pacman keyring initialized and populated."
-log " - archlinux-keyring package updated."
-log "For more details, please check the log file at: ${LOG_FILE}"
+log "${BOLD}Update Summary:${RESET}"
+log " - Updated archlinux-keyring to latest version."
+log " - Refreshed Pacman keyring with new keys."
+log " - Performed full system upgrade."
+log " - Log file: ${LOG_FILE}"
 log "------------------------------------------------------------"
 
-# 5. Wait for the user to press Enter to continue
-echo -e "\nPress ${BOLD}Enter${RESET} key to return to the main menu..."
+# Pause before exiting
+echo -e "\nPress ${BOLD}Enter${RESET} to return to the menu..."
 read -r
 
 exit 0
-
