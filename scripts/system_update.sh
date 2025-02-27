@@ -1,12 +1,12 @@
 #!/bin/bash
 ################################################################################
-# system_update.sh - Fixed Version
+# system_update.sh - Visual Progress Bar Version
 #
-# Changes from original:
-# 1. Uses user-specific temp file location
-# 2. Better sudo handling for log file access
-# 3. Clearer error handling
-# 4. Simplified keyring management
+# Changes from previous:
+# 1. Added animated progress bar
+# 2. Real-time status updates
+# 3. Clean visual presentation
+# 4. Preserved background logging
 ################################################################################
 
 # Configuration
@@ -15,57 +15,69 @@ LOG_FILE="${LOG_DIR}/system_update.log"
 mkdir -p "${LOG_DIR}"
 > "${LOG_FILE}"
 
-# Define colors
+# Progress Bar Configuration
+BAR_WIDTH=50
+STEPS=3
+CURRENT_STEP=0
+
+# Define colors and styles
 RESET="\033[0m"
 BOLD="\033[1m"
 GREEN="\033[32m"
 RED="\033[31m"
 CYAN="\033[36m"
+YELLOW="\033[33m"
 
-# Enhanced logging
-log() {
-    echo -e "$1" | sudo tee -a "${LOG_FILE}" >/dev/null
+# Progress display functions
+show_progress() {
+    local percent=$1
+    local status=$2
+    local filled=$(printf "%.0f" $(echo "$BAR_WIDTH * $percent / 100" | bc -l))
+    local empty=$((BAR_WIDTH - filled))
+    
+    printf "\r${BOLD}${CYAN}["
+    printf "%${filled}s" | tr ' ' '■'
+    printf "%${empty}s" | tr ' ' '·'
+    printf "] ${percent}%%${RESET}  ${BOLD}${YELLOW}%s${RESET}" "$status"
 }
 
-# Error checking with continuation
-check_error() {
-    local result=$?
-    local operation="$1"
-    if [ $result -ne 0 ]; then
-        log "${RED}[ERROR] ${operation} failed (Code: ${result})${RESET}"
-        return 1
-    else
-        log "${GREEN}[SUCCESS] ${operation} completed${RESET}"
-        return 0
-    fi
+complete_step() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    local percent=$((CURRENT_STEP * 100 / STEPS))
+    show_progress $percent "$1"
+    echo
+}
+
+# Error handling
+handle_error() {
+    echo -e "\n${RED}${BOLD}✗ Error in: $1${RESET}"
+    echo -e "${RED}Check ${LOG_FILE} for details${RESET}"
+    exit 1
 }
 
 # Main process
 clear
-log "${CYAN}${BOLD}Starting Secure System Update...${RESET}"
-log "------------------------------------------------------------"
+echo -e "${BOLD}${CYAN}🚀 Starting Arch Linux System Update ${RESET}\n"
 
-# 1. Keyring update (critical first step)
-sudo pacman -Sy --needed archlinux-keyring 2>&1 | sudo tee -a "${LOG_FILE}"
-check_error "Keyring Update" || exit 1
+# 1. Keyring update
+show_progress 0 "Updating keyring..."
+sudo pacman -Sy --needed archlinux-keyring >> "$LOG_FILE" 2>&1 || handle_error "Keyring Update"
+complete_step "Keyring updated ✔"
 
 # 2. System upgrade
-log "\n${CYAN}Performing full system upgrade...${RESET}"
-sudo pacman -Syu --noconfirm 2>&1 | sudo tee -a "${LOG_FILE}"
-check_error "System Upgrade"
+show_progress 33 "Performing system upgrade..."
+sudo pacman -Syu --noconfirm >> "$LOG_FILE" 2>&1 || handle_error "System Upgrade"
+complete_step "System upgraded ✔"
 
-# 3. Post-update checks
-log "\n${CYAN}Verifying system integrity...${RESET}"
-sudo pacman-key --populate archlinux 2>&1 | sudo tee -a "${LOG_FILE}"
-check_error "Keyring Verification"
+# 3. Verification
+show_progress 66 "Verifying integrity..."
+sudo pacman-key --populate archlinux >> "$LOG_FILE" 2>&1 || handle_error "Key Verification"
+complete_step "System verified ✔"
 
 # Final status
-if grep -qi "error" "${LOG_FILE}"; then
-    log "\n${RED}Completed with warnings - Check ${LOG_FILE}${RESET}"
-else
-    log "\n${GREEN}System updated successfully${RESET}"
-fi
+show_progress 100 "Update complete!"
+echo -e "\n\n${BOLD}${GREEN}✓ System updated successfully${RESET}"
 
-# User confirmation
+# Clean exit
 read -rp $'\nPress [Enter] to return to menu...' -n1
 exit 0
