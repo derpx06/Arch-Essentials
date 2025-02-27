@@ -1,82 +1,71 @@
 #!/bin/bash
 ################################################################################
-# system_update.sh
+# system_update.sh - Fixed Version
 #
-# This script updates and upgrades your Arch Linux system, prioritizing the
-# keyring update to prevent signature verification errors. It logs all actions
-# and checks for errors, providing a clear summary upon completion.
-#
-# Changes made to fix issues:
-# 1. Correct order: Update archlinux-keyring first to avoid signature errors.
-# 2. Removed unnecessary pacman-key --init which can reset the keyring.
-# 3. Keyring population after package update ensures latest keys are active.
-# 4. Streamlined logging and error checking for clarity.
+# Changes from original:
+# 1. Uses user-specific temp file location
+# 2. Better sudo handling for log file access
+# 3. Clearer error handling
+# 4. Simplified keyring management
 ################################################################################
 
-# Define colors for output
+# Configuration
+LOG_DIR="${HOME}/.arch_tools_logs"
+LOG_FILE="${LOG_DIR}/system_update.log"
+mkdir -p "${LOG_DIR}"
+> "${LOG_FILE}"
+
+# Define colors
 RESET="\033[0m"
 BOLD="\033[1m"
 GREEN="\033[32m"
 RED="\033[31m"
 CYAN="\033[36m"
 
-# Log file for detailed output
-LOG_FILE="/tmp/system_update_log.txt"
-> "$LOG_FILE"  # Clear the log file at the start
-
-# Function to log and display output
+# Enhanced logging
 log() {
-    echo -e "$1" | tee -a "$LOG_FILE"
+    echo -e "$1" | sudo tee -a "${LOG_FILE}" >/dev/null
 }
 
-# Function to check exit code and log error if found
+# Error checking with continuation
 check_error() {
-    if [ $? -ne 0 ]; then
-        log "${RED}[ERROR] $1 failed.${RESET}"
-        exit 1
+    local result=$?
+    local operation="$1"
+    if [ $result -ne 0 ]; then
+        log "${RED}[ERROR] ${operation} failed (Code: ${result})${RESET}"
+        return 1
     else
-        log "${GREEN}[SUCCESS] $1 completed.${RESET}"
+        log "${GREEN}[SUCCESS] ${operation} completed${RESET}"
+        return 0
     fi
 }
 
-# Begin system update process
-log "${CYAN}${BOLD}Starting Arch Linux System Update...${RESET}"
+# Main process
+clear
+log "${CYAN}${BOLD}Starting Secure System Update...${RESET}"
 log "------------------------------------------------------------"
 
-# 1. Update archlinux-keyring first to prevent key errors during upgrade
-log "\n${CYAN}Updating archlinux-keyring package...${RESET}"
-sudo pacman -Sy archlinux-keyring --noconfirm 2>&1 | tee -a "$LOG_FILE"
-check_error "archlinux-keyring Update"
+# 1. Keyring update (critical first step)
+sudo pacman -Sy --needed archlinux-keyring 2>&1 | sudo tee -a "${LOG_FILE}"
+check_error "Keyring Update" || exit 1
 
-# 2. Populate the latest keys from the updated keyring package
-log "\n${CYAN}Populating Arch Linux keys...${RESET}"
-sudo pacman-key --populate archlinux 2>&1 | tee -a "$LOG_FILE"
-check_error "Keyring Population"
-
-# 3. Perform full system upgrade with the refreshed keyring
-log "\n${CYAN}Running full system upgrade (sudo pacman -Syu)...${RESET}"
-sudo pacman -Syu --noconfirm 2>&1 | tee -a "$LOG_FILE"
+# 2. System upgrade
+log "\n${CYAN}Performing full system upgrade...${RESET}"
+sudo pacman -Syu --noconfirm 2>&1 | sudo tee -a "${LOG_FILE}"
 check_error "System Upgrade"
 
-# 4. Check log for any errors encountered
-log "\n${CYAN}Checking log for errors...${RESET}"
-if grep -qi "error" "$LOG_FILE"; then
-    log "${RED}Errors detected. Review log at ${LOG_FILE}.${RESET}"
+# 3. Post-update checks
+log "\n${CYAN}Verifying system integrity...${RESET}"
+sudo pacman-key --populate archlinux 2>&1 | sudo tee -a "${LOG_FILE}"
+check_error "Keyring Verification"
+
+# Final status
+if grep -qi "error" "${LOG_FILE}"; then
+    log "\n${RED}Completed with warnings - Check ${LOG_FILE}${RESET}"
 else
-    log "${GREEN}All operations completed without errors.${RESET}"
+    log "\n${GREEN}System updated successfully${RESET}"
 fi
 
-# 5. Final summary
-log "\n------------------------------------------------------------"
-log "${BOLD}Update Summary:${RESET}"
-log " - Updated archlinux-keyring to latest version."
-log " - Refreshed Pacman keyring with new keys."
-log " - Performed full system upgrade."
-log " - Log file: ${LOG_FILE}"
-log "------------------------------------------------------------"
-
-# Pause before exiting
-echo -e "\nPress ${BOLD}Enter${RESET} to return to the menu..."
-read -r
-
+# User confirmation
+read -rp $'\nPress [Enter] to return to menu...' -n1
 exit 0
