@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+
+# Define Colors
+RESET="\033[0m"
+BOLD="\033[1m"
+CYAN="\033[36m"
+GREEN="\033[32m"
+RED="\033[31m"
+YELLOW="\033[33m"
+
+# Function to display section headers
+section_header() {
+    echo -e "${CYAN}${BOLD}\n$1${RESET}"
+}
+
+# Function to display error messages
+error_msg() {
+    echo -e "${RED}${BOLD}Error:${RESET} $1"
+    exit 1
+}
+
+# Function to display warnings
+warning_msg() {
+    echo -e "${YELLOW}${BOLD}Warning:${RESET} $1"
+}
+
+# Function to display success messages
+success_msg() {
+    echo -e "${GREEN}${BOLD}Success:${RESET} $1"
+}
+
+# Check if script is running as root
+check_root() {
+    if [ "$EUID" -eq 0 ]; then
+        warning_msg "This script should not be run as root! Yay must be built as a regular user."
+        exit 1
+    fi
+}
+
+# Install required dependencies
+install_dependencies() {
+    section_header "Checking Dependencies"
+    local missing=()
+    
+    # Check for git
+    if ! command -v git &> /dev/null; then
+        missing+=("git")
+    fi
+    
+    # Check for base-devel (makepkg dependency)
+    if ! pacman -Qg base-devel &> /dev/null; then
+        missing+=("base-devel")
+    fi
+    
+    if [ ${#missing[@]} -gt 0 ]; then
+        warning_msg "Missing dependencies: ${missing[*]}"
+        echo -e "${CYAN}Attempting to install dependencies...${RESET}"
+        
+        if ! sudo -v &> /dev/null; then
+            error_msg "No sudo access! Please install manually: pacman -S ${missing[*]}"
+        fi
+        
+        if ! sudo pacman -S --needed --noconfirm "${missing[@]}"; then
+            error_msg "Failed to install dependencies! Please run manually: pacman -S ${missing[*]}"
+        fi
+        success_msg "Dependencies installed successfully"
+    else
+        success_msg "All dependencies already installed"
+    fi
+}
+
+# Cleanup build directory
+cleanup() {
+    section_header "Cleaning Up"
+    if [ -d "$build_dir" ]; then
+        echo -e "Removing build directory: ${YELLOW}$build_dir${RESET}"
+        rm -rf "$build_dir"
+    fi
+}
+
+# Main installation function
+main() {
+    check_root
+    
+    section_header "Starting Yay Installation"
+    
+    # Check if yay already exists
+    if command -v yay &> /dev/null; then
+        success_msg "Yay is already installed at $(which yay)"
+        exit 0
+    fi
+    
+    install_dependencies
+    
+    local build_dir="/tmp/yay-build"
+    local yay_url="https://aur.archlinux.org/yay.git"
+    
+    # Clean any previous build attempts
+    cleanup
+    
+    # Clone yay repository
+    section_header "Cloning Repository"
+    echo -e "Cloning from: ${YELLOW}$yay_url${RESET}"
+    if ! git clone "$yay_url" "$build_dir"; then
+        error_msg "Failed to clone repository! Check internet connection."
+    fi
+    
+    # Build yay
+    section_header "Building Yay"
+    cd "$build_dir" || error_msg "Failed to enter build directory!"
+    
+    echo -e "Running makepkg..."
+    if ! makepkg -si --noconfirm --needed; then
+        cleanup
+        error_msg "Build failed! Possible causes:\n\
+        - Outdated package databases (try 'sudo pacman -Sy')\n\
+        - Missing dependencies (check base-devel group)\n\
+        - Network issues\n\
+        - Disk space issues\n\
+        Check build logs in $build_dir"
+    fi
+    
+    # Verify installation
+    section_header "Verifying Installation"
+    if ! command -v yay &> /dev/null; then
+        warning_msg "Yay installed but not in PATH! Checking common locations..."
+        local possible_paths=(
+            "/usr/bin/yay"
+            "/usr/local/bin/yay"
+            "$HOME/go/bin/yay"
+        )
+        
+        for path in "${possible_paths[@]}"; do
+            if [ -f "$path" ]; then
+                success_msg "Yay found at: $path"
+                echo -e "${YELLOW}You may need to add this to your PATH${RESET}"
+                exit 0
+            fi
+        done
+        error_msg "Yay installation verification failed!"
+    fi
+    
+    success_msg "Yay installed successfully at $(which yay)"
+    
+    # Final cleanup
+    cleanup
+    
+    # Post-installation check
+    section_header "Post-Installation Check"
+    echo -e "Running ${YELLOW}yay --version${RESET}"
+    if ! yay --version; then
+        warning_msg "Yay version check failed! Check installation."
+    fi
+    
+    echo -e "\n${GREEN}${BOLD}Installation complete!${RESET}"
+    echo -e "Use ${YELLOW}yay${RESET} to manage AUR packages"
+    echo -e "First time usage recommendation: ${YELLOW}yay -Y --gendb${RESET}"
+}
+
+# Execute main function
+main
