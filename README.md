@@ -68,11 +68,7 @@ From the main menu, select options like **Customize**, **Update**, **Debug**, **
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
 ---
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+Many features dont work n current state.
 ---
 
 *Happy Arch-ing and enjoy a hassle-free, customized Arch Linux experience!*
