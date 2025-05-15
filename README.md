@@ -65,9 +65,8 @@ From the main menu, select options like **Customize**, **Update**, **Debug**, **
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.Many features dont work properly as off now
 
-Many features dont work n current state.
 ---
 ---
 
