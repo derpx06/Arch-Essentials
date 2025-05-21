@@ -70,5 +70,5 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for det
 ---
 ---
 
-*Happy Arch-ing and enjoy a hassle-free, customized Arch Linux experience!*
+*Happy Arch-ing and enjoy a hassle-free, customized Arch Linux experience!Use Arch BTW*
 
